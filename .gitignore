@@ -1,0 +1,32 @@
+# Claude Code config
+CLAUDE.md
+.claude/
+.playwright-mcp/
+
+# Documentation / non-code
+docs/
+
+# Model checkpoints / training outputs
+work_dir/
+
+# Virtual environment
+venv/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+.ipynb_checkpoints/
+
+# Dataset files (too large for git)
+data/
+
+# Results (regenerable)
+results/
+
+# Personal files
+personal/
+
+# All markdown files
+*.md
+**/*.md
