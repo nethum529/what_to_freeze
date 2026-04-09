@@ -13,6 +13,7 @@ from dataclasses import dataclass
 class BenchmarkConfig:
     # --- Shared / infrastructure ---
     SEED: int = 42
+    BBOX_SHIFT_BASESAM: int = 20
     BBOX_SHIFT_MEDSAM: int = 20
     BBOX_SHIFT_PPSAM: int = 50
     BBOX_SHIFT_PTSAM: int = 20
@@ -63,6 +64,8 @@ class BenchmarkConfig:
 
     def get_strategy_hparams(self, strategy_name):
         """Return paper-recommended hyperparameters for a given strategy."""
+        if strategy_name == "basesam":
+            return None  # zero-shot, no training
         valid = {"medsam", "ppsam", "ptsam"}
         if strategy_name not in valid:
             raise ValueError(

@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "MedSAM-main"))
 from segment_anything import sam_model_registry
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from scripts.benchmark.strategies import MedSAMStrategy, PPSAMStrategy, PTSAMStrategy
+from scripts.benchmark.strategies import MedSAMStrategy, PPSAMStrategy, PTSAMStrategy, BaseSAMStrategy
 from scripts.benchmark.config import BenchmarkConfig
 
 
@@ -45,6 +45,7 @@ def iou_score(pred, gt):
 
 
 STRATEGY_MAP = {
+    "basesam": BaseSAMStrategy,
     "medsam": MedSAMStrategy,
     "ppsam": PPSAMStrategy,
     "ptsam": PTSAMStrategy,
@@ -57,8 +58,9 @@ def load_model(strategy_name, checkpoint_path, sam_checkpoint, device):
     from scripts.benchmark.strategies import build_strategy
     model = build_strategy(strategy_name, sam_model, config).to(device)
     del sam_model
-    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model.load_state_dict(ckpt["model"])
+    if checkpoint_path is not None:
+        ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        model.load_state_dict(ckpt["model"])
     model.eval()
     return model
 
@@ -127,7 +129,7 @@ def summarize(results, strategy_name):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--strategy", choices=["medsam", "ppsam", "ptsam"])
+    parser.add_argument("--strategy", choices=["basesam", "medsam", "ppsam", "ptsam"])
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument("--test_path", default="data/npy/ETIS_test")
     parser.add_argument("--sam_checkpoint", default="work_dir/SAM/sam_vit_b_01ec64.pth")
@@ -141,12 +143,13 @@ def main():
 
     if args.all:
         strategies = [
+            ("basesam", None),
             ("medsam", join(args.work_dir, "medsam", "model_best.pth")),
             ("ppsam", join(args.work_dir, "ppsam", "model_best.pth")),
             ("ptsam", join(args.work_dir, "ptsam", "model_best.pth")),
         ]
         for name, ckpt in strategies:
-            if not os.path.exists(ckpt):
+            if ckpt is not None and not os.path.exists(ckpt):
                 print(f"Skipping {name}: {ckpt} not found")
                 continue
             model = load_model(name, ckpt, args.sam_checkpoint, device)

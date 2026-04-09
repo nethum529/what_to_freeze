@@ -1,17 +1,19 @@
 """
 Top-level orchestrator for the ETIS freeze-strategy benchmark.
 
-Runs all three SAM adaptation strategies end-to-end:
-  1. Cache PT-SAM embeddings
-  2. Train PT-SAM, MedSAM, PP-SAM
-  3. Evaluate all on test set
-  4. Generate comparison table and visualizations
+Runs four SAM strategies end-to-end:
+  1. Evaluate Base SAM (zero-shot, no training)
+  2. Cache PT-SAM embeddings
+  3. Train PT-SAM, MedSAM, PP-SAM
+  4. Evaluate all on test set
+  5. Generate comparison table and visualizations
 
 Usage:
-    python scripts/run_benchmark.py                  # full benchmark
-    python scripts/run_benchmark.py --strategy medsam # single strategy
-    python scripts/run_benchmark.py --skip-train      # evaluate only
-    python scripts/run_benchmark.py --epochs 5        # quick test
+    python scripts/run_benchmark.py                    # full benchmark
+    python scripts/run_benchmark.py --strategy basesam  # zero-shot baseline only
+    python scripts/run_benchmark.py --strategy medsam   # single strategy
+    python scripts/run_benchmark.py --skip-train        # evaluate only
+    python scripts/run_benchmark.py --epochs 5          # quick test
 """
 
 import argparse
@@ -31,8 +33,8 @@ from benchmark.trainer import train_strategy
 
 def print_comparison_table(all_eval, all_train):
     """Print formatted comparison table."""
-    strategies = ["medsam", "ppsam", "ptsam"]
-    labels = {"medsam": "MedSAM", "ppsam": "PP-SAM", "ptsam": "PT-SAM"}
+    strategies = ["basesam", "medsam", "ppsam", "ptsam"]
+    labels = {"basesam": "Base SAM", "medsam": "MedSAM", "ppsam": "PP-SAM", "ptsam": "PT-SAM"}
 
     n_test = 0
     for s in strategies:
@@ -87,8 +89,8 @@ def print_comparison_table(all_eval, all_train):
 
 def main():
     parser = argparse.ArgumentParser(description="ETIS Freeze-Strategy Benchmark")
-    parser.add_argument("--strategy", choices=["medsam", "ppsam", "ptsam"],
-                        help="Run single strategy (default: all three)")
+    parser.add_argument("--strategy", choices=["basesam", "medsam", "ppsam", "ptsam"],
+                        help="Run single strategy (default: all four)")
     parser.add_argument("--skip-train", action="store_true",
                         help="Skip training, evaluate existing checkpoints")
     parser.add_argument("--skip-eval", action="store_true",
@@ -114,7 +116,7 @@ def main():
         overrides["DEVICE"] = args.device
     config = BenchmarkConfig(**overrides)
 
-    strategies = [args.strategy] if args.strategy else ["ptsam", "medsam", "ppsam"]
+    strategies = [args.strategy] if args.strategy else ["basesam", "ptsam", "medsam", "ppsam"]
 
     # Verify prerequisites
     assert os.path.exists(config.SAM_CHECKPOINT), f"SAM checkpoint not found: {config.SAM_CHECKPOINT}"
@@ -138,15 +140,16 @@ def main():
     elif "ptsam" in strategies and config.PTSAM_AUGMENTATION:
         print("\n[Phase 1] Skipping embedding cache (augmentation enabled, encoder runs per-batch)")
 
-    # Phase 2: Training
-    if not args.skip_train:
-        print(f"\n[Phase 2] Training {len(strategies)} strategies...")
-        for strat in strategies:
+    # Phase 2: Training (skip basesam — zero-shot, no training)
+    trainable_strategies = [s for s in strategies if s != "basesam"]
+    if not args.skip_train and trainable_strategies:
+        print(f"\n[Phase 2] Training {len(trainable_strategies)} strategies...")
+        for strat in trainable_strategies:
             result = train_strategy(strat, config)
             all_train[strat] = result
     else:
         # Load existing training results
-        for strat in strategies:
+        for strat in trainable_strategies:
             result_path = os.path.join(config.WORK_DIR, strat, "train_result.json")
             if os.path.exists(result_path):
                 with open(result_path) as f:

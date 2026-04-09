@@ -189,7 +189,50 @@ class PTSAMStrategy(nn.Module):
         return [self.learned_tokens]
 
 
+class BaseSAMStrategy(nn.Module):
+    """Zero-shot SAM baseline. Freeze everything, 0 trainable params."""
+
+    def __init__(self, image_encoder, mask_decoder, prompt_encoder,
+                 use_grad_checkpoint=False):
+        super().__init__()
+        self.image_encoder = image_encoder
+        self.mask_decoder = mask_decoder
+        self.prompt_encoder = prompt_encoder
+
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def forward(self, image, box):
+        with torch.no_grad():
+            image_embedding = self.image_encoder(image)
+
+            box_torch = torch.as_tensor(box, dtype=torch.float32, device=image.device)
+            if len(box_torch.shape) == 2:
+                box_torch = box_torch[:, None, :]
+            sparse_embeddings, dense_embeddings = self.prompt_encoder(
+                points=None, boxes=box_torch, masks=None,
+            )
+
+            low_res_masks, _ = self.mask_decoder(
+                image_embeddings=image_embedding,
+                image_pe=self.prompt_encoder.get_dense_pe(),
+                sparse_prompt_embeddings=sparse_embeddings,
+                dense_prompt_embeddings=dense_embeddings,
+                multimask_output=False,
+            )
+
+        ori_res_masks = F.interpolate(
+            low_res_masks, size=(image.shape[2], image.shape[3]),
+            mode="bilinear", align_corners=False,
+        )
+        return ori_res_masks
+
+    def get_trainable_params(self):
+        return []
+
+
 STRATEGY_REGISTRY = {
+    "basesam": (BaseSAMStrategy, 20),
     "medsam": (MedSAMStrategy, 20),
     "ppsam": (PPSAMStrategy, 50),
     "ptsam": (PTSAMStrategy, 20),
@@ -198,7 +241,7 @@ STRATEGY_REGISTRY = {
 
 def build_strategy(strategy_name, sam_model, config):
     """Build a strategy module from a loaded SAM model."""
-    use_gc = config.GRADIENT_CHECKPOINT and strategy_name != "ptsam"
+    use_gc = config.GRADIENT_CHECKPOINT and strategy_name not in ("ptsam", "basesam")
     kwargs = dict(
         image_encoder=sam_model.image_encoder,
         mask_decoder=sam_model.mask_decoder,

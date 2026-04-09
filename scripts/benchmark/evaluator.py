@@ -94,27 +94,30 @@ def evaluate_strategy(strategy_name, config=None):
         config = BenchmarkConfig()
 
     device = torch.device(config.DEVICE)
-    checkpoint_path = os.path.join(config.WORK_DIR, strategy_name, "model_best.pth")
 
     print(f"\n{'='*60}")
     print(f"  EVALUATING: {strategy_name.upper()}")
     print(f"{'='*60}")
-
-    if not os.path.exists(checkpoint_path):
-        print(f"  ERROR: checkpoint not found at {checkpoint_path}")
-        return None
 
     # Load model (full model for all strategies — fair inference comparison)
     sam_model = sam_model_registry["vit_b"](checkpoint=config.SAM_CHECKPOINT)
     model = build_strategy(strategy_name, sam_model, config).to(device)
     del sam_model
 
-    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model.load_state_dict(ckpt["model"])
-    model.eval()
-
-    print(f"  Loaded checkpoint: epoch {ckpt.get('epoch', '?')}, "
-          f"val_loss={ckpt.get('val_loss', '?')}")
+    if strategy_name == "basesam":
+        # Zero-shot baseline: no checkpoint, use pretrained SAM weights directly
+        model.eval()
+        print(f"  Using pretrained SAM weights (zero-shot, no fine-tuning)")
+    else:
+        checkpoint_path = os.path.join(config.WORK_DIR, strategy_name, "model_best.pth")
+        if not os.path.exists(checkpoint_path):
+            print(f"  ERROR: checkpoint not found at {checkpoint_path}")
+            return None
+        ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        model.load_state_dict(ckpt["model"])
+        model.eval()
+        print(f"  Loaded checkpoint: epoch {ckpt.get('epoch', '?')}, "
+              f"val_loss={ckpt.get('val_loss', '?')}")
 
     # Load test data
     test_gt_dir = os.path.join(config.TEST_DATA, "gts")
