@@ -33,6 +33,7 @@ results/
 # Personal files
 personal/
 
-# All markdown files
+# All markdown files (except README)
 *.md
 **/*.md
+!/README.md
