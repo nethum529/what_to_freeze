@@ -52,9 +52,9 @@ cd what_to_freeze
 conda create -n medsam python=3.10 -y
 conda activate medsam
 
-# Install dependencies
+# Install all dependencies
+pip install -r requirements.txt
 pip install -e ./MedSAM-main
-pip install albumentations
 ```
 
 You will also need the pretrained SAM ViT-B checkpoint. Download `sam_vit_b_01ec64.pth` from the [SAM model zoo](https://github.com/facebookresearch/segment-anything#model-checkpoints) and place it in `work_dir/SAM/`.

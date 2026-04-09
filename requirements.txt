@@ -1,0 +1,22 @@
+# Core deep learning
+torch>=2.1.0
+monai>=1.3.0
+
+# SAM model (install as editable: pip install -e ./MedSAM-main)
+# segment-anything is provided by the MedSAM-main package
+
+# Data processing
+numpy>=2.0.0
+scipy>=1.12.0
+Pillow>=10.0.0
+opencv-python>=4.8.0
+scikit-image>=0.22.0
+albumentations>=1.3.0
+
+# Visualization
+matplotlib>=3.8.0
+tqdm>=4.65.0
+
+# MedSAM preprocessing (CT/MR workflows)
+SimpleITK>=2.2.1
+nibabel>=5.0.0
