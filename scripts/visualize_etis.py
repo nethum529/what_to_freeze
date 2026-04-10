@@ -22,9 +22,10 @@ RESULTS_DIR = "results/etis"
 WORK_DIR = "work_dir/benchmark_etis"
 FIG_DIR = os.path.join(RESULTS_DIR, "figures")
 
-STRATEGIES = ["medsam", "ppsam", "ptsam"]
-COLORS = {"medsam": "#2196F3", "ppsam": "#FF9800", "ptsam": "#4CAF50"}
+STRATEGIES = ["basesam", "medsam", "ppsam", "ptsam"]
+COLORS = {"basesam": "#9E9E9E", "medsam": "#2196F3", "ppsam": "#FF9800", "ptsam": "#4CAF50"}
 LABELS = {
+    "basesam": "Base SAM (Zero-shot)",
     "medsam": "MedSAM (Enc+Dec)",
     "ppsam": "PP-SAM (Enc+Prompt)",
     "ptsam": "PT-SAM (Tokens only)",
