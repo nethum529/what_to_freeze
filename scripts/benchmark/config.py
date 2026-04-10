@@ -56,7 +56,7 @@ class BenchmarkConfig:
     # Loss: 0.2 CE + 0.8 Dice, cosine annealing, heavy augmentation
     PTSAM_LR: float = 0.05
     PTSAM_NUM_EPOCHS: int = 312          # mapped from 1000×20 steps to ETIS
-    PTSAM_BATCH_SIZE: int = 2
+    PTSAM_BATCH_SIZE: int = 4
     PTSAM_WEIGHT_DECAY: float = 0.01
     PTSAM_LOSS_CE_WEIGHT: float = 0.2
     PTSAM_LOSS_DICE_WEIGHT: float = 0.8
