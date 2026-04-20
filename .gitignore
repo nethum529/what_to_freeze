@@ -9,6 +9,9 @@ docs/
 # Pretrained checkpoints (downloaded, not our work)
 work_dir/SAM/
 
+# Raw Kvasir-SEG dataset (download from https://datasets.simula.no/downloads/kvasir-seg.zip)
+data/Kvasir-SEG/
+
 # Regenerable cached embeddings
 work_dir/benchmark_etis/ptsam_cache/
 
