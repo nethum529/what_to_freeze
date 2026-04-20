@@ -34,6 +34,9 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "MedSAM-main"))
 from segment_anything import sam_model_registry
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from scripts.benchmark.config import BenchmarkConfig
+
 
 # ---------------------------------------------------------------------------
 # Dataset
@@ -251,7 +254,7 @@ def train(args):
         num_workers=0, pin_memory=True,
     )
 
-    save_dir = join(args.work_dir, "benchmark", f"{args.strategy}_kvasir")
+    save_dir = join(args.work_dir, args.strategy)
     os.makedirs(save_dir, exist_ok=True)
 
     best_loss = float("inf")
@@ -295,7 +298,7 @@ def train(args):
 
     plt.figure()
     plt.plot(range(1, len(losses) + 1), losses, marker="o")
-    plt.title(f"{args.strategy} Training Loss (Kvasir-SEG)")
+    plt.title(f"{args.strategy} Training Loss ({args.dataset.upper()})")
     plt.xlabel("Epoch")
     plt.ylabel("Dice + BCE Loss")
     plt.grid(True)
@@ -325,9 +328,17 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--strategy", required=True, choices=["medsam", "ppsam", "ptsam"])
-    parser.add_argument("--data_path", default="data/npy/KvasirSEG_train")
+    parser.add_argument(
+        "--dataset",
+        choices=["etis", "kvasir"],
+        default="etis",
+        help="Dataset to train on (default: etis). Drives defaults for --data_path and --work_dir.",
+    )
+    parser.add_argument("--data_path", default=None,
+                        help="Training data dir; defaults to dataset registry value.")
     parser.add_argument("--checkpoint", default="work_dir/SAM/sam_vit_b_01ec64.pth")
-    parser.add_argument("--work_dir", default="work_dir")
+    parser.add_argument("--work_dir", default=None,
+                        help="Output dir; defaults to dataset registry value (e.g. work_dir/benchmark_etis).")
     parser.add_argument("--num_epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -335,6 +346,13 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
+
+    # Derive dataset-specific defaults AFTER parsing, so user-supplied --data_path / --work_dir still win.
+    ds_config = BenchmarkConfig.for_dataset(args.dataset)
+    if args.data_path is None:
+        args.data_path = ds_config.TRAIN_DATA
+    if args.work_dir is None:
+        args.work_dir = ds_config.WORK_DIR
 
     random.seed(args.seed)
     np.random.seed(args.seed)
