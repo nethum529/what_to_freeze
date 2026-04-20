@@ -126,7 +126,7 @@ def main():
 
     # Verify prerequisites
     assert os.path.exists(config.SAM_CHECKPOINT), f"SAM checkpoint not found: {config.SAM_CHECKPOINT}"
-    assert os.path.exists(config.TRAIN_DATA), f"Training data not found: {config.TRAIN_DATA}. Run: python scripts/preprocess_etis.py"
+    assert os.path.exists(config.TRAIN_DATA), f"Training data not found: {config.TRAIN_DATA}. Run: python scripts/preprocess_{config.DATASET}.py"
     assert os.path.exists(config.TEST_DATA), f"Test data not found: {config.TEST_DATA}"
 
     os.makedirs(config.RESULTS_DIR, exist_ok=True)
