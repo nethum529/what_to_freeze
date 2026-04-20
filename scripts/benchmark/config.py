@@ -9,9 +9,26 @@ Evaluation protocol (dataset, split, metrics, seed) is what's standardized.
 from dataclasses import dataclass
 
 
+DATASET_REGISTRY = {
+    "etis": {
+        "train_data": "data/npy/ETIS_train",
+        "test_data":  "data/npy/ETIS_test",
+        "work_dir":   "work_dir/benchmark_etis",
+        "results_dir": "results/etis",
+    },
+    "kvasir": {
+        "train_data": "data/npy/KvasirSEG_train",
+        "test_data":  "data/npy/KvasirSEG_test",
+        "work_dir":   "work_dir/benchmark_kvasir",
+        "results_dir": "results/kvasir",
+    },
+}
+
+
 @dataclass(frozen=True)
 class BenchmarkConfig:
     # --- Shared / infrastructure ---
+    DATASET: str = "etis"
     SEED: int = 42
     BBOX_SHIFT_BASESAM: int = 20
     BBOX_SHIFT_MEDSAM: int = 20
@@ -80,3 +97,28 @@ class BenchmarkConfig:
             "dice_weight": getattr(self, f"{prefix}_LOSS_DICE_WEIGHT"),
             "ce_weight": getattr(self, f"{prefix}_LOSS_CE_WEIGHT"),
         }
+
+    @classmethod
+    def for_dataset(cls, name: str, **overrides):
+        """Construct a BenchmarkConfig for a named dataset.
+
+        Path fields (TRAIN_DATA, TEST_DATA, WORK_DIR, RESULTS_DIR) are sourced
+        from DATASET_REGISTRY[name]. Any kwargs in `overrides` take precedence
+        over registry defaults — supports e.g. `for_dataset("kvasir", MEDSAM_NUM_EPOCHS=5)`.
+
+        Raises ValueError if `name` is not in DATASET_REGISTRY.
+        """
+        if name not in DATASET_REGISTRY:
+            raise ValueError(
+                f"Unknown dataset '{name}'. Must be one of: {sorted(DATASET_REGISTRY)}"
+            )
+        paths = DATASET_REGISTRY[name]
+        defaults = {
+            "DATASET": name,
+            "TRAIN_DATA": paths["train_data"],
+            "TEST_DATA": paths["test_data"],
+            "WORK_DIR": paths["work_dir"],
+            "RESULTS_DIR": paths["results_dir"],
+        }
+        defaults.update(overrides)
+        return cls(**defaults)
