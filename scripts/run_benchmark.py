@@ -31,7 +31,7 @@ from benchmark.evaluator import evaluate_strategy
 from benchmark.trainer import train_strategy
 
 
-def print_comparison_table(all_eval, all_train):
+def print_comparison_table(all_eval, all_train, dataset_label: str):
     """Print formatted comparison table."""
     strategies = ["basesam", "medsam", "ppsam", "ptsam"]
     labels = {"basesam": "Base SAM", "medsam": "MedSAM", "ppsam": "PP-SAM", "ptsam": "PT-SAM"}
@@ -43,7 +43,7 @@ def print_comparison_table(all_eval, all_train):
             break
 
     print(f"\n{'='*90}")
-    print(f"  BENCHMARK RESULTS: ETIS-LaribPolypDB (N={n_test} test images)")
+    print(f"  BENCHMARK RESULTS: {dataset_label} (N={n_test} test images)")
     print(f"{'='*90}")
     header = (
         f"{'Strategy':<10} | {'Trainable':>12} | {'Dice':>12} | {'IoU':>12} | "
@@ -89,6 +89,12 @@ def print_comparison_table(all_eval, all_train):
 
 def main():
     parser = argparse.ArgumentParser(description="ETIS Freeze-Strategy Benchmark")
+    parser.add_argument(
+        "--dataset",
+        choices=["etis", "kvasir"],
+        default="etis",
+        help="Dataset to run on (default: etis)",
+    )
     parser.add_argument("--strategy", choices=["basesam", "medsam", "ppsam", "ptsam"],
                         help="Run single strategy (default: all four)")
     parser.add_argument("--skip-train", action="store_true",
@@ -114,7 +120,7 @@ def main():
         overrides["PTSAM_BATCH_SIZE"] = args.batch_size
     if args.device is not None:
         overrides["DEVICE"] = args.device
-    config = BenchmarkConfig(**overrides)
+    config = BenchmarkConfig.for_dataset(args.dataset, **overrides)
 
     strategies = [args.strategy] if args.strategy else ["basesam", "ptsam", "medsam", "ppsam"]
 
@@ -176,7 +182,7 @@ def main():
 
     # Phase 4: Comparison table
     if all_eval:
-        print_comparison_table(all_eval, all_train)
+        print_comparison_table(all_eval, all_train, config.DATASET.upper())
 
     total_time = time.time() - benchmark_start
     print(f"\nTotal benchmark time: {total_time/60:.1f} minutes")
