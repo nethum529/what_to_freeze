@@ -128,15 +128,30 @@ def summarize(results, strategy_name):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dataset",
+        choices=["etis", "kvasir"],
+        default="etis",
+        help="Dataset to evaluate on (default: etis). Drives defaults for --test_path, --work_dir, --output.",
+    )
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--strategy", choices=["basesam", "medsam", "ppsam", "ptsam"])
     parser.add_argument("--checkpoint", type=str)
-    parser.add_argument("--test_path", default="data/npy/ETIS_test")
+    parser.add_argument("--test_path", default=None)
     parser.add_argument("--sam_checkpoint", default="work_dir/SAM/sam_vit_b_01ec64.pth")
-    parser.add_argument("--work_dir", default="work_dir/benchmark_etis")
-    parser.add_argument("--output", default="results/etis/evaluate_results.json")
+    parser.add_argument("--work_dir", default=None)
+    parser.add_argument("--output", default=None)
     parser.add_argument("--device", default="cuda:0")
     args = parser.parse_args()
+
+    # Derive dataset-specific defaults AFTER parsing, so user-supplied --test_path etc. still win.
+    ds_config = BenchmarkConfig.for_dataset(args.dataset)
+    if args.test_path is None:
+        args.test_path = ds_config.TEST_DATA
+    if args.work_dir is None:
+        args.work_dir = ds_config.WORK_DIR
+    if args.output is None:
+        args.output = f"{ds_config.RESULTS_DIR}/evaluate_results.json"
 
     all_results = {}
     device = torch.device(args.device)
